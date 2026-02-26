@@ -9,6 +9,11 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -76,6 +81,9 @@ public class MainWindow {
 	 
 	 // Multiplayer toggle
 	 private static boolean multiplayerEnabled = false;
+	 
+	 // Menu music
+	 private static Clip menuMusicClip;
 	  
 	public MainWindow() {
 	        frame.setSize(1000, 1000);
@@ -260,7 +268,10 @@ public class MainWindow {
 			frame.add(controlsScreenLabel);
 			frame.add(levelSelectionScreenLabel);
 			
-	        frame.setVisible(true);   
+	        frame.setVisible(true);
+	        
+	        // Start menu music on loop
+	        startMenuMusic();   
 	}
 	
 	// Show the main menu screen
@@ -280,6 +291,7 @@ public class MainWindow {
 		level1Running = false;
 		level2Running = false;
 		frame.setTitle("Trail Blazers");
+		startMenuMusic();  // resume menu music when returning from levels
 	}
 	
 	// Show the controls screen
@@ -335,6 +347,7 @@ public class MainWindow {
 		level1Running = true;
 		level2Running = false;
 		frame.setTitle("Trail Blazers - Level 1");
+		stopMenuMusic();  // stop menu music when entering a level
 	}
 	
 	// Show Level 2 (parallax scrolling industrial background)
@@ -354,11 +367,40 @@ public class MainWindow {
 		level1Running = false;
 		level2Running = true;
 		frame.setTitle("Trail Blazers - Level 2");
+		stopMenuMusic();  // stop menu music when entering a level
 	}
 	
 	// Getter for multiplayer state
 	public static boolean isMultiplayerEnabled() {
 		return multiplayerEnabled;
+	}
+	
+	// ========== MENU MUSIC ==========
+	// Loads and plays the menu music WAV file on continuous loop.
+	// Called when showing menu screens (main, controls, level selection).
+	private static void startMenuMusic() {
+		// Don't restart if already playing
+		if (menuMusicClip != null && menuMusicClip.isRunning()) return;
+		
+		try {
+			File musicFile = new File("res/Music/awesomeness.wav");
+			AudioInputStream audioIn = AudioSystem.getAudioInputStream(musicFile);
+			menuMusicClip = AudioSystem.getClip();
+			menuMusicClip.open(audioIn);
+			menuMusicClip.loop(Clip.LOOP_CONTINUOUSLY);  // loop forever until stopped
+		} catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+			System.err.println("Error loading menu music: " + e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	
+	// Stops the menu music. Called when entering a level.
+	private static void stopMenuMusic() {
+		if (menuMusicClip != null && menuMusicClip.isRunning()) {
+			menuMusicClip.stop();
+			menuMusicClip.close();  // release audio resources
+			menuMusicClip = null;
+		}
 	}
 
 	public static void main(String[] args) {
