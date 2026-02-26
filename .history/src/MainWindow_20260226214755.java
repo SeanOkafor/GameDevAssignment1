@@ -63,16 +63,6 @@ public class MainWindow {
 	 private JButton multiPlayerButton;
 	 private JButton backFromControlsButton;
 	 private JButton backFromLevelSelectButton;
-	 private JButton level1Button;
-	 private JButton level2Button;
-	 
-	 // Level 1 parallax background panel
-	 private static Level1Panel level1Panel;
-	 private static boolean level1Running = false;
-	 
-	 // Level 2 parallax background panel
-	 private static Level2Panel level2Panel;
-	 private static boolean level2Running = false;
 	 
 	 // Multiplayer toggle
 	 private static boolean multiplayerEnabled = false;
@@ -124,7 +114,7 @@ public class MainWindow {
 			}
 			levelSelectionScreenLabel.setVisible(false);  // hidden initially
 			
-			//control screen button (on main screen, bottom-right)
+			// ========== CONTROLS BUTTON (on main screen, bottom-right) ==========
 			// Transparent button overlaying the "Controls" area on the main screen image
 			controlsButton = new JButton();
 			controlsButton.setBounds(792, 897, 184, 70);  // scaled from original image coords
@@ -140,7 +130,7 @@ public class MainWindow {
 				}
 			});
 			
-			// single player button
+			// ========== SINGLE PLAYER BUTTON (on main screen) ==========
 			singlePlayerButton = new JButton();
 			singlePlayerButton.setBounds(228, 897, 258, 72);  // scaled from original (263,833)-(560,900)
 			singlePlayerButton.setOpaque(false);
@@ -156,7 +146,7 @@ public class MainWindow {
 				}
 			});
 			
-			// multiplayer button
+			// ========== MULTIPLAYER BUTTON (on main screen) ==========
 			multiPlayerButton = new JButton();
 			multiPlayerButton.setBounds(509, 897, 230, 72);  // scaled from original (587,833)-(852,900)
 			multiPlayerButton.setOpaque(false);
@@ -172,7 +162,7 @@ public class MainWindow {
 				}
 			});
 			
-			// back button on controls screen
+			// ========== BACK BUTTON (on controls screen) ==========
 			backFromControlsButton = new JButton();
 			backFromControlsButton.setBounds(459, 830, 81, 30);  // scaled from original (529,770)-(622,798)
 			backFromControlsButton.setOpaque(false);
@@ -188,41 +178,9 @@ public class MainWindow {
 				}
 			});
 			
-			// Level 1 button on level selection screen
-			level1Button = new JButton();
-			level1Button.setBounds(47, 290, 439, 444);  // scaled from original (63,232)-(653,587) on 1344x800 image
-			level1Button.setOpaque(false);
-			level1Button.setContentAreaFilled(false);
-			level1Button.setBorderPainted(false);
-			level1Button.setFocusPainted(false);
-			level1Button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-			level1Button.setVisible(false);
-			level1Button.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					showLevel1();
-				}
-			});
-			
-			// Level 2 button on level selection screen
-			level2Button = new JButton();
-			level2Button.setBounds(513, 291, 441, 443);  // scaled from original (690,233)-(1282,587) on 1344x800 image
-			level2Button.setOpaque(false);
-			level2Button.setContentAreaFilled(false);
-			level2Button.setBorderPainted(false);
-			level2Button.setFocusPainted(false);
-			level2Button.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-			level2Button.setVisible(false);
-			level2Button.addActionListener(new ActionListener() {
-				@Override
-				public void actionPerformed(ActionEvent e) {
-					showLevel2();
-				}
-			});
-			
-			// back button on level selection screen
+			// ========== BACK BUTTON (on level selection screen) ==========
 			backFromLevelSelectButton = new JButton();
-			backFromLevelSelectButton.setBounds(466, 913, 68, 36);  // scaled from original (626,730)-(718,759) on 1344x800 image
+			backFromLevelSelectButton.setBounds(543, 787, 80, 31);  // scaled from original (626,730)-(718,759)
 			backFromLevelSelectButton.setOpaque(false);
 			backFromLevelSelectButton.setContentAreaFilled(false);
 			backFromLevelSelectButton.setBorderPainted(false);
@@ -236,26 +194,12 @@ public class MainWindow {
 				}
 			});
 			
-			// Level 1 parallax panel
-			level1Panel = new Level1Panel();
-			level1Panel.setBounds(0, 0, 1000, 1000);
-			level1Panel.setVisible(false);
-			
-			// Level 2 parallax panel
-			level2Panel = new Level2Panel();
-			level2Panel.setBounds(0, 0, 1000, 1000);
-			level2Panel.setVisible(false);
-			
 			// Add components to frame (order matters - buttons on top of images)
 			frame.add(controlsButton);
 			frame.add(singlePlayerButton);
 			frame.add(multiPlayerButton);
 			frame.add(backFromControlsButton);
 			frame.add(backFromLevelSelectButton);
-			frame.add(level1Button);
-			frame.add(level2Button);
-			frame.add(level1Panel);
-			frame.add(level2Panel);
 			frame.add(mainScreenLabel);
 			frame.add(controlsScreenLabel);
 			frame.add(levelSelectionScreenLabel);
@@ -273,13 +217,6 @@ public class MainWindow {
 		backFromControlsButton.setVisible(false);
 		levelSelectionScreenLabel.setVisible(false);
 		backFromLevelSelectButton.setVisible(false);
-		level1Button.setVisible(false);
-		level2Button.setVisible(false);
-		level1Panel.setVisible(false);
-		level2Panel.setVisible(false);
-		level1Running = false;
-		level2Running = false;
-		frame.setTitle("Trail Blazers");
 	}
 	
 	// Show the controls screen
@@ -292,12 +229,6 @@ public class MainWindow {
 		backFromControlsButton.setVisible(true);
 		levelSelectionScreenLabel.setVisible(false);
 		backFromLevelSelectButton.setVisible(false);
-		level1Button.setVisible(false);
-		level2Button.setVisible(false);
-		level1Panel.setVisible(false);
-		level2Panel.setVisible(false);
-		level1Running = false;
-		level2Running = false;
 	}
 	
 	// Show the level selection screen
@@ -310,50 +241,6 @@ public class MainWindow {
 		backFromControlsButton.setVisible(false);
 		levelSelectionScreenLabel.setVisible(true);
 		backFromLevelSelectButton.setVisible(true);
-		level1Button.setVisible(true);
-		level2Button.setVisible(true);
-		level1Panel.setVisible(false);
-		level2Panel.setVisible(false);
-		level1Running = false;
-		level2Running = false;
-	}
-	
-	// Show Level 1 (parallax scrolling mountain background)
-	private void showLevel1() {
-		mainScreenLabel.setVisible(false);
-		controlsButton.setVisible(false);
-		singlePlayerButton.setVisible(false);
-		multiPlayerButton.setVisible(false);
-		controlsScreenLabel.setVisible(false);
-		backFromControlsButton.setVisible(false);
-		levelSelectionScreenLabel.setVisible(false);
-		backFromLevelSelectButton.setVisible(false);
-		level1Button.setVisible(false);
-		level2Button.setVisible(false);
-		level1Panel.setVisible(true);
-		level2Panel.setVisible(false);
-		level1Running = true;
-		level2Running = false;
-		frame.setTitle("Trail Blazers - Level 1");
-	}
-	
-	// Show Level 2 (parallax scrolling industrial background)
-	private void showLevel2() {
-		mainScreenLabel.setVisible(false);
-		controlsButton.setVisible(false);
-		singlePlayerButton.setVisible(false);
-		multiPlayerButton.setVisible(false);
-		controlsScreenLabel.setVisible(false);
-		backFromControlsButton.setVisible(false);
-		levelSelectionScreenLabel.setVisible(false);
-		backFromLevelSelectButton.setVisible(false);
-		level1Button.setVisible(false);
-		level2Button.setVisible(false);
-		level1Panel.setVisible(false);
-		level2Panel.setVisible(true);
-		level1Running = false;
-		level2Running = true;
-		frame.setTitle("Trail Blazers - Level 2");
 	}
 	
 	// Getter for multiplayer state
@@ -378,18 +265,6 @@ public class MainWindow {
 				 {
 				 gameloop();
 				 }
-			
-			// Update Level 1 parallax scrolling
-			if(level1Running && level1Panel != null) {
-				level1Panel.updateParallax();
-				level1Panel.repaint();
-			}
-			
-			// Update Level 2 parallax scrolling
-			if(level2Running && level2Panel != null) {
-				level2Panel.updateParallax();
-				level2Panel.repaint();
-			}
 			
 			//UNIT test to see if framerate matches 
 		 UnitTests.CheckFrameRate(System.currentTimeMillis(),FrameCheck, TargetFPS); 
