@@ -7,37 +7,30 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 
 /**
- * Player1 - Animated sprite for Player 1 with 4-frame flight animation.
+ * Player2 - Animated sprite for Player 2 with 4-frame flight animation.
  * 
  * ==================== HOW THE SPRITE ANIMATION WORKS ====================
  * 
- * The flight animation creates the illusion of a character flying through the level
- * by cycling through 4 sprite frames in a continuous loop.
+ * Identical animation system to Player1, but uses Player 2 sprites and
+ * is controlled with the Up/Down arrow keys. Player 2 only appears when
+ * multiplayer mode is enabled.
  * 
  * SETUP:
- * 1. Four PNG sprite frames are loaded from res/New Graphics/Player1Sprites/
- *    (sprite-1-1.png through sprite-1-4.png, each ~120x50 pixels).
- * 2. The sprites are drawn scaled up (2x) so the character is visible on the 1000x1000 panel.
- * 3. The player spawns in the left quadrant of the screen, vertically centred.
+ * 1. Four PNG sprite frames are loaded from res/New Graphics/Player2Sprites/
+ *    (sprite-2-1.png through sprite-2-4.png, each ~116x48 pixels).
+ * 2. The sprites are drawn at 150x60 (same scale as Player 1).
+ * 3. Player 2 spawns in the left quadrant, 100 pixels below Player 1's centre.
  * 
- * PER-FRAME UPDATE (called from the game loop via the level panel):
- * 1. updateAnimation() increments a tick counter each frame.
- * 2. Every ANIMATION_DELAY ticks (8 frames at 100 FPS = ~12.5 animation FPS),
- *    the current frame index advances: 0 -> 1 -> 2 -> 3 -> 0 -> 1 -> ...
- * 3. If W is held (movingUp = true), the player's Y position decreases (moves up).
- *    If S is held (movingDown = true), the player's Y position increases (moves down).
- * 4. Y position is clamped so the player can't go off-screen.
+ * PER-FRAME UPDATE:
+ * 1. Animation cycles through 4 frames at ~12.5 FPS (every 8 game ticks).
+ * 2. Up arrow held → moves up. Down arrow held → moves down.
+ * 3. Y clamped to stay on screen.
  * 
- * RENDERING (draw method, called from the level panel's paintComponent):
- * 1. The current frame image (frames[currentFrame]) is drawn at (x, y).
- * 2. The image is scaled to DISPLAY_WIDTH x DISPLAY_HEIGHT (2x original size).
- * 3. The player is drawn AFTER all parallax layers, so it appears in front.
- * 
- * The result: a smoothly animated flying character that the player can move
- * up and down on the left side of the screen using W and S keys.
+ * RENDERING:
+ * Drawn after Player 1 in the level panel's paintComponent.
  * =========================================================================
  */
-public class Player1 {
+public class Player2 {
 	
 	// Sprite frames (4 frames of flight animation)
 	private BufferedImage[] frames = new BufferedImage[4];
@@ -49,10 +42,9 @@ public class Player1 {
 	private int animationTick = 0;
 	
 	// How many game ticks between frame changes
-	// At 100 FPS, 8 ticks = frame change every 80ms = ~12.5 animation FPS
 	private static final int ANIMATION_DELAY = 8;
 	
-	// Display size (3/5 of the 2x scale — small enough to look right on 1000x1000 panel)
+	// Display size (same as Player 1)
 	private static final int DISPLAY_WIDTH = 150;
 	private static final int DISPLAY_HEIGHT = 60;
 	
@@ -60,7 +52,7 @@ public class Player1 {
 	private int x;
 	private int y;
 	
-	// Movement speed in pixels per frame
+	// Movement speed in pixels per frame (same as Player 1)
 	private static final int MOVE_SPEED = 10;
 	
 	// Movement state - set by keyboard input from MainWindow
@@ -81,9 +73,9 @@ public class Player1 {
 	private int damageDealt = 0;
 	
 	// ========== ATTACK SYSTEM ==========
-	// Regular attack sprites (3 frames: P1attack-1, P1attack-2, P1attack-3)
+	// Regular attack sprites (3 frames: P2attack-1, P2attack-2, P2attack-3)
 	private BufferedImage[] attackFrames = new BufferedImage[3];
-	// Special attack sprites (3 frames: P1Special-1, P1special-2, P1special-3)
+	// Special attack sprites (3 frames: P2special-1, P2special-2, P2special-3)
 	private BufferedImage[] specialFrames = new BufferedImage[3];
 	
 	// Regular attack damage
@@ -96,49 +88,40 @@ public class Player1 {
 	private int specialCharge = 0;
 	
 	// ========== INVINCIBILITY FRAMES ==========
-	// When hit by an enemy attack, the player becomes invincible for 1 second (100 frames at 100 FPS).
-	// During i-frames the sprite flickers (alternates visible/invisible every 5 frames).
 	private int iFrameTimer = 0;
 	private static final int IFRAME_DURATION = 100;  // 1 second at 100 FPS
-	private static final int FLICKER_INTERVAL = 5;   // toggle visibility every 5 frames
+	private static final int FLICKER_INTERVAL = 5;
 	
-	// ========== DEATH FALL ==========
-	// When HP hits 0, the player sprite falls straight down off screen.
-	private boolean falling = false;
-	private boolean fallenOffScreen = false;
-	private static final int FALL_SPEED = 5;  // pixels per frame
-	
-	public Player1() {
+	public Player2() {
 		loadFrames();
-		// Spawn in the left quadrant (x = 100), vertically centred
+		// Spawn in the left quadrant (x = 100), 100 pixels below Player 1's centre
 		x = 100;
-		y = (panelHeight - DISPLAY_HEIGHT) / 2;
+		y = (panelHeight - DISPLAY_HEIGHT) / 2 + 100;
 	}
 	
 	/**
-	 * Loads the 4 sprite frames from the Player1Sprites folder.
+	 * Loads the 4 sprite frames from the Player2Sprites folder.
 	 */
 	private void loadFrames() {
-		String basePath = "res/New Graphics/Player1Sprites/";
+		String basePath = "res/New Graphics/Player2Sprites/";
 		try {
 			// Flight animation frames
-			frames[0] = ImageIO.read(new File(basePath + "sprite-1-1.png"));
-			frames[1] = ImageIO.read(new File(basePath + "sprite-1-2.png"));
-			frames[2] = ImageIO.read(new File(basePath + "sprite-1-3.png"));
-			frames[3] = ImageIO.read(new File(basePath + "sprite-1-4.png"));
+			frames[0] = ImageIO.read(new File(basePath + "sprite-2-1.png"));
+			frames[1] = ImageIO.read(new File(basePath + "sprite-2-2.png"));
+			frames[2] = ImageIO.read(new File(basePath + "sprite-2-3.png"));
+			frames[3] = ImageIO.read(new File(basePath + "sprite-2-4.png"));
 			
 			// Regular attack projectile frames (3 frames)
-			attackFrames[0] = ImageIO.read(new File(basePath + "P1attack-1.png"));
-			attackFrames[1] = ImageIO.read(new File(basePath + "P1attack-2.png"));
-			attackFrames[2] = ImageIO.read(new File(basePath + "P1attack-3.png"));
+			attackFrames[0] = ImageIO.read(new File(basePath + "P2attack-1.png"));
+			attackFrames[1] = ImageIO.read(new File(basePath + "P2attack-2.png"));
+			attackFrames[2] = ImageIO.read(new File(basePath + "P2attack-3.png"));
 			
 			// Special attack projectile frames (3 frames)
-			// Note: frame 1 has capital 'S' in filename (P1Special-1.png)
-			specialFrames[0] = ImageIO.read(new File(basePath + "P1Special-1.png"));
-			specialFrames[1] = ImageIO.read(new File(basePath + "P1special-2.png"));
-			specialFrames[2] = ImageIO.read(new File(basePath + "P1special-3.png"));
+			specialFrames[0] = ImageIO.read(new File(basePath + "P2special-1.png"));
+			specialFrames[1] = ImageIO.read(new File(basePath + "P2special-2.png"));
+			specialFrames[2] = ImageIO.read(new File(basePath + "P2special-3.png"));
 		} catch (IOException e) {
-			System.err.println("Error loading Player 1 sprites: " + e.getMessage());
+			System.err.println("Error loading Player 2 sprites: " + e.getMessage());
 			e.printStackTrace();
 		}
 	}
@@ -148,21 +131,6 @@ public class Player1 {
 	 * Advances the animation frame and applies vertical movement.
 	 */
 	public void update() {
-		// --- Death fall: override normal movement ---
-		if (falling) {
-			y += FALL_SPEED;
-			if (y > panelHeight + 50) {
-				fallenOffScreen = true;
-			}
-			return;  // skip normal movement and animation
-		}
-		
-		// --- Start falling when HP reaches 0 ---
-		if (hp <= 0 && !falling) {
-			falling = true;
-			return;
-		}
-		
 		// --- Animation cycling ---
 		animationTick++;
 		if (animationTick >= ANIMATION_DELAY) {
@@ -194,14 +162,11 @@ public class Player1 {
 	
 	/**
 	 * Draws the current animation frame at the player's position.
-	 * Called from the level panel's paintComponent, AFTER all parallax layers.
 	 */
 	public void draw(Graphics2D g2d) {
 		BufferedImage currentImage = frames[currentFrame];
 		if (currentImage != null) {
-			// During i-frames, flicker the sprite (skip drawing every other interval)
 			if (iFrameTimer > 0 && (iFrameTimer / FLICKER_INTERVAL) % 2 == 0) {
-				// Invisible frame — draw at 30% alpha for a ghost effect
 				Composite original = g2d.getComposite();
 				g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
 				g2d.drawImage(currentImage, x, y, DISPLAY_WIDTH, DISPLAY_HEIGHT, null);
@@ -223,20 +188,17 @@ public class Player1 {
 	}
 	
 	/**
-	 * Resets player position to spawn point (left quadrant, vertically centred).
-	 * Called when entering a level to ensure consistent starting position.
+	 * Resets player position to spawn point (left quadrant, 100px below Player 1 centre).
 	 */
 	public void resetPosition() {
 		x = 100;
-		y = (panelHeight - DISPLAY_HEIGHT) / 2;
+		y = (panelHeight - DISPLAY_HEIGHT) / 2 + 100;
 		currentFrame = 0;
 		animationTick = 0;
 		hp = MAX_HP;
 		damageDealt = 0;
 		specialCharge = 0;
 		iFrameTimer = 0;
-		falling = false;
-		fallenOffScreen = false;
 	}
 	
 	// ========== COMBAT STAT ACCESSORS ==========
@@ -249,13 +211,6 @@ public class Player1 {
 	public void takeDamage(int amount) {
 		hp -= amount;
 		if (hp < 0) hp = 0;
-	}
-	
-	/** Heals 1 HP if below max. Returns true if healed, false if already full. */
-	public boolean heal() {
-		if (hp >= MAX_HP) return false;
-		hp++;
-		return true;
 	}
 	
 	/**
@@ -289,12 +244,6 @@ public class Player1 {
 	public int getY() { return y; }
 	public int getDisplayWidth() { return DISPLAY_WIDTH; }
 	public int getDisplayHeight() { return DISPLAY_HEIGHT; }
-	
-	/** Returns true once the player has died and fallen below the screen. */
-	public boolean hasFallenOffScreen() { return fallenOffScreen; }
-	
-	/** Returns true if the player is currently in the death-fall animation. */
-	public boolean isFalling() { return falling; }
 	
 	// ========== ATTACK METHODS ==========
 	
@@ -331,7 +280,7 @@ public class Player1 {
 		int projectileHeight = fireSpecial ? 75 : 30;
 		int spawnY = y + (DISPLAY_HEIGHT / 2) - (projectileHeight / 2);
 		
-		return new Projectile(projectileFrames, spawnX, spawnY, damage, fireSpecial, 1);
+		return new Projectile(projectileFrames, spawnX, spawnY, damage, fireSpecial, 2);
 	}
 	
 	/**

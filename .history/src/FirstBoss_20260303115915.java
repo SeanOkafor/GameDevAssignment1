@@ -33,25 +33,13 @@ import javax.imageio.ImageIO;
  * 
  * PHASE 1 ATTACKS:
  *   Attack 1 (Bob & Shoot): Boss bobs up/down for 10 seconds, firing a
- *     horizontal projectile every 0.75 seconds from the left side of its
+ *     horizontal projectile every 1.5 seconds from the left side of its
  *     sprite. Projectile flies left across the screen.
  *     Sprites: L1P1A1-{1,2,3}.png  380×261  → displayed at 95×65 (75% reduction)
  *   Attack 2 (Dive Bomb): Boss slides off right, reappears at top or bottom
- *     (random). Spawns 8 lightning bolts that fire after 1s. Repeats 3 times,
+ *     (random). Spawns 5 arrows that fire after 0.5s. Repeats 3 times,
  *     then returns to home position.
  *     Sprites: L1P1A2-{1,2,3}.png  438×136  → displayed at 110×34 (75% reduction)
- * 
- * PHASE 2 ATTACKS:
- *   Attack 1 (Homing Bolts): Boss slides off/on like Phase 1 Attack 2,
- *     then spawns bolts one by one every 0.2s. Each bolt sits for 0.5s,
- *     then aims at a player and launches in a straight line. Once moving
- *     it does not change direction. In multiplayer, target is chosen
- *     randomly (player 1 or 2). Repeats 3 times.
- *     Sprites: L1P2A1-{1,2,3}.png  168×83  → displayed at 84×42
- *   Attack 2 (Forking Bolts): Boss bobs up/down for 10s, firing bolts
- *     left every 0.75s. When each bolt reaches mid-screen (x=500), it
- *     forks into 3: one straight + two angled ±20° up/down.
- *     Sprites: L1P2A2-{1,2,3}.png  193×71  → displayed at 97×36
  * 
  * STATE MACHINE:
  *   ENTERING        → descends from top of screen into centre position
@@ -140,7 +128,7 @@ public class FirstBoss {
 	// --- Attack 1: Bob & Shoot ---
 	private int attack1Timer = 0;
 	private static final int ATTACK1_DURATION = 1000;       // 10 seconds at 100 FPS
-	private static final int ATTACK1_SHOOT_INTERVAL = 75;    // 0.75 seconds at 100 FPS
+	private static final int ATTACK1_SHOOT_INTERVAL = 150;   // 1.5 seconds at 100 FPS
 	private int attack1ShootCooldown = 0;
 	private boolean attack1BobUp = false;
 	private static final int BOB_SPEED = 3;
@@ -153,77 +141,36 @@ public class FirstBoss {
 	private static final double ATK1_PROJ_SPEED = -7;  // moves left
 	
 	// --- Attack 2: Dive Bomb ---
-	private enum Attack2SubState { SLIDE_OFF, SLIDE_TO_POS, SHOW_BOLTS, WAIT_BOLTS, FIRE_BOLTS }
+	private enum Attack2SubState { SLIDE_OFF, SHOW_ARROWS, WAIT_ARROWS, FIRE_ARROWS }
 	private Attack2SubState atk2SubState;
 	private int atk2Timer = 0;
 	private int atk2Reps = 0;
 	private static final int ATK2_MAX_REPS = 3;
-	private static final int ATK2_NUM_BOLTS = 8;
 	private boolean atk2Top = false;
-	private int atk2TargetY = 0;  // Y position to slide to
 	private static final int ATK2_SLIDE_SPEED = 8;
-	private static final int ATK2_BOLT_WAIT = 100;        // 1 second before bolts launch
-	private static final int ATK2_BOLT_SPACING = 100;     // 100px between each bolt vertically
+	private static final int ATK2_ARROW_WAIT = 100;      // 1 second before arrows launch
+	private static final int ATK2_ARROW_SPACING = 100;    // 100px between each arrow vertically
 	
-	// Attack2 lightning bolt display size (438×136 reduced by 75% → 110×34)
-	private static final int ATK2_BOLT_WIDTH = 110;
-	private static final int ATK2_BOLT_HEIGHT = 34;
-	private static final double ATK2_BOLT_SPEED = -8;     // flies left
+	// Attack2 arrow display size (438×136 reduced by 75% → 110×34)
+	private static final int ATK2_ARROW_WIDTH = 110;
+	private static final int ATK2_ARROW_HEIGHT = 34;
+	private static final double ATK2_ARROW_SPEED = -8;    // flies left
 	
-	// Track current rep's bolts so we can launch them after the wait
-	private List<EnemyProjectile> atk2CurrentBolts = new ArrayList<>();
-	
-	// --- Phase 2 Attack 1: Homing Bolts ---
-	// Boss slides off/on, spawns bolts one by one that aim at a player then launch
-	private enum P2Atk1SubState { SLIDE_OFF, SLIDE_TO_POS, SPAWNING }
-	private P2Atk1SubState p2a1SubState;
-	private int p2a1Reps = 0;
-	private static final int P2A1_MAX_REPS = 3;
-	private int p2a1BoltsSpawned = 0;
-	private static final int P2A1_NUM_BOLTS = 5;
-	private static final int P2A1_SPAWN_INTERVAL = 30;    // 0.3 seconds
-	private static final int P2A1_LAUNCH_DELAY = 50;      // 0.5 seconds after spawn
-	private int p2a1SpawnCooldown = 0;
-	private boolean p2a1Top = false;
-	private static final int P2A1_SLIDE_SPEED = 8;
-	private static final double P2A1_BOLT_SPEED = 6;      // total speed magnitude
-	private static final int P2A1_BOLT_WIDTH = 84;
-	private static final int P2A1_BOLT_HEIGHT = 42;
-	// Pending bolts waiting to be aimed and launched
-	private List<EnemyProjectile> p2a1PendingBolts = new ArrayList<>();
-	private List<Integer> p2a1PendingTimers = new ArrayList<>();
-	
-	// --- Phase 2 Attack 2: Forking Bolts ---
-	// Boss bobs up/down, shoots bolts left that fork into 3 at mid-screen
-	private int p2a2Timer = 0;
-	private static final int P2A2_DURATION = 1000;         // 10 seconds
-	private static final int P2A2_SHOOT_INTERVAL = 90;     // 0.9 seconds
-	private int p2a2ShootCooldown = 0;
-	private boolean p2a2BobUp = false;
-	private static final int P2A2_BOLT_WIDTH = 97;
-	private static final int P2A2_BOLT_HEIGHT = 36;
-	private static final double P2A2_BOLT_SPEED = -7;
-	private static final int P2A2_FORK_X = 500;            // middle of screen
-	private static final double P2A2_FORK_ANGLE = 20;      // degrees
-	// Bolts that haven't forked yet
-	private List<EnemyProjectile> p2a2ForkableBolts = new ArrayList<>();
+	// Track current rep's arrows so we can launch them after the wait
+	private List<EnemyProjectile> atk2CurrentArrows = new ArrayList<>();
 	
 	// ========== ENEMY PROJECTILES ==========
 	private List<EnemyProjectile> enemyProjectiles = new ArrayList<>();
 	
 	private boolean multiplayer;
-	private Player1 player1;
-	private Player2 player2;
 	
 	// ========== CONSTRUCTOR ==========
 	
-	public FirstBoss(boolean multiplayer, Player1 player1, Player2 player2) {
+	public FirstBoss(boolean multiplayer) {
 		this.multiplayer = multiplayer;
-		this.player1 = player1;
-		this.player2 = player2;
 		loadAllFrames();
 		
-		hpPerPhase = multiplayer ? 2000 : 1000;  // TESTING: was BASE_HP_PER_PHASE * 2 / BASE_HP_PER_PHASE
+		hpPerPhase = multiplayer ? BASE_HP_PER_PHASE * 2 : BASE_HP_PER_PHASE;
 		totalMaxHp = hpPerPhase * TOTAL_PHASES;
 		phaseHp = hpPerPhase;
 		totalHp = totalMaxHp;
@@ -357,12 +304,10 @@ public class FirstBoss {
 		currentAttack = rng.nextInt(2);  // 0 or 1
 		state = State.ATTACKING;
 		
-		if (currentPhase == 0) {
-			if (currentAttack == 0) initAttack1();
-			else initAttack2();
+		if (currentAttack == 0) {
+			initAttack1();
 		} else {
-			if (currentAttack == 0) initP2Attack1();
-			else initP2Attack2();
+			initAttack2();
 		}
 	}
 	
@@ -437,39 +382,29 @@ public class FirstBoss {
 					} else {
 						y = PANEL_HEIGHT - DISPLAY_HEIGHT - 20;
 					}
-					// Boss is off-screen right — Y is already set, now slide back on
-					x = PANEL_WIDTH + 10;
-					atk2SubState = Attack2SubState.SLIDE_TO_POS;
-				}
-				break;
-				
-			case SLIDE_TO_POS:
-				// Slide X back to homeX (Y already teleported while off-screen)
-				x -= ATK2_SLIDE_SPEED;
-				if (x <= homeX) {
 					x = homeX;
-					atk2SubState = Attack2SubState.SHOW_BOLTS;
+					atk2SubState = Attack2SubState.SHOW_ARROWS;
 				}
 				break;
 				
-			case SHOW_BOLTS:
-				// Spawn 5 lightning bolts stationary beside boss, then start wait timer
-				spawnAttack2Bolts();
-				atk2SubState = Attack2SubState.WAIT_BOLTS;
-				atk2Timer = ATK2_BOLT_WAIT;
+			case SHOW_ARROWS:
+				// Spawn 5 arrows stationary beside boss, then start wait timer
+				spawnAttack2Arrows();
+				atk2SubState = Attack2SubState.WAIT_ARROWS;
+				atk2Timer = ATK2_ARROW_WAIT;
 				break;
 				
-			case WAIT_BOLTS:
-				// Bolts are visible but stationary — pause 1 second
+			case WAIT_ARROWS:
+				// Arrows are visible but stationary — pause 1 second
 				atk2Timer--;
 				if (atk2Timer <= 0) {
-					launchAttack2Bolts();
-					atk2SubState = Attack2SubState.FIRE_BOLTS;
-					atk2Timer = 50;  // brief pause while bolts fly
+					launchAttack2Arrows();
+					atk2SubState = Attack2SubState.FIRE_ARROWS;
+					atk2Timer = 50;  // brief pause while arrows fly
 				}
 				break;
 				
-			case FIRE_BOLTS:
+			case FIRE_ARROWS:
 				atk2Timer--;
 				if (atk2Timer <= 0) {
 					atk2Reps++;
@@ -487,267 +422,53 @@ public class FirstBoss {
 	}
 	
 	/**
-	 * Spawns 8 lightning bolts stacked vertically at the boss's X position.
-	 * If boss is at the top → bolts spawn BELOW the boss, each 100px apart.
-	 * If boss is at the bottom → bolts spawn ABOVE the boss, each 100px apart.
-	 * Bolts start stationary (speed 0) until launched.
+	 * Spawns 5 arrows stacked vertically at the boss's X position.
+	 * If boss is at the top → arrows spawn BELOW the boss, each 100px apart.
+	 * If boss is at the bottom → arrows spawn ABOVE the boss, each 100px apart.
+	 * Arrows start stationary (speed 0) until launched.
 	 */
-	private void spawnAttack2Bolts() {
-		atk2CurrentBolts.clear();
+	private void spawnAttack2Arrows() {
+		atk2CurrentArrows.clear();
 		
-		// Bolts align with the left edge of the boss sprite
-		double boltX = x;
+		// Arrows align with the left edge of the boss sprite
+		double arrowX = x;
 		
-		for (int i = 0; i < ATK2_NUM_BOLTS; i++) {
-			double boltY;
+		for (int i = 0; i < 5; i++) {
+			double arrowY;
 			if (atk2Top) {
-				// Boss at top → bolts below
-				boltY = y + DISPLAY_HEIGHT + 10 + (i * ATK2_BOLT_SPACING);
+				// Boss at top → arrows below, going downward
+				arrowY = y + DISPLAY_HEIGHT + 10 + (i * ATK2_ARROW_SPACING);
 			} else {
-				// Boss at bottom → bolts above
-				boltY = y - ATK2_BOLT_HEIGHT - 10 - (i * ATK2_BOLT_SPACING);
+				// Boss at bottom → arrows above, going upward
+				arrowY = y - ATK2_ARROW_HEIGHT - 10 - (i * ATK2_ARROW_SPACING);
 			}
 			
-			EnemyProjectile bolt = new EnemyProjectile(
+			EnemyProjectile arrow = new EnemyProjectile(
 				attackSprites[currentPhase][1],
-				boltX, boltY,
+				arrowX, arrowY,
 				0, 0,  // stationary until launched
-				ATK2_BOLT_WIDTH, ATK2_BOLT_HEIGHT
+				ATK2_ARROW_WIDTH, ATK2_ARROW_HEIGHT
 			);
-			atk2CurrentBolts.add(bolt);
-			enemyProjectiles.add(bolt);
+			atk2CurrentArrows.add(arrow);
+			enemyProjectiles.add(arrow);
 		}
 	}
 	
-	/** Launches all stationary Attack 2 lightning bolts — sends them flying left. */
-	private void launchAttack2Bolts() {
-		for (EnemyProjectile bolt : atk2CurrentBolts) {
-			bolt.setSpeedX(ATK2_BOLT_SPEED);
+	/** Launches all stationary Attack 2 arrows — sends them flying left. */
+	private void launchAttack2Arrows() {
+		for (EnemyProjectile arrow : atk2CurrentArrows) {
+			arrow.setSpeedX(ATK2_ARROW_SPEED);
 		}
-		atk2CurrentBolts.clear();
-	}
-	
-	// ========== PHASE 2 ATTACK 1: HOMING BOLTS ==========
-	
-	private void initP2Attack1() {
-		p2a1SubState = P2Atk1SubState.SLIDE_OFF;
-		p2a1Reps = 0;
-		p2a1PendingBolts.clear();
-		p2a1PendingTimers.clear();
-	}
-	
-	private void updateP2Attack1() {
-		switch (p2a1SubState) {
-			case SLIDE_OFF:
-				x += P2A1_SLIDE_SPEED;
-				if (x > PANEL_WIDTH) {
-					p2a1Top = rng.nextBoolean();
-					if (p2a1Top) {
-						y = 20;
-					} else {
-						y = PANEL_HEIGHT - DISPLAY_HEIGHT - 20;
-					}
-					x = PANEL_WIDTH + 10;
-					p2a1SubState = P2Atk1SubState.SLIDE_TO_POS;
-				}
-				break;
-				
-			case SLIDE_TO_POS:
-				x -= P2A1_SLIDE_SPEED;
-				if (x <= homeX) {
-					x = homeX;
-					p2a1SubState = P2Atk1SubState.SPAWNING;
-					p2a1BoltsSpawned = 0;
-					p2a1SpawnCooldown = 0;
-				}
-				break;
-				
-			case SPAWNING:
-				// Spawn bolts one at a time
-				p2a1SpawnCooldown--;
-				if (p2a1SpawnCooldown <= 0 && p2a1BoltsSpawned < P2A1_NUM_BOLTS) {
-					spawnP2HomingBolt();
-					p2a1BoltsSpawned++;
-					p2a1SpawnCooldown = P2A1_SPAWN_INTERVAL;
-				}
-				
-				// Tick pending bolt timers and launch when ready
-				tickP2HomingTimers();
-				
-				// All bolts spawned AND all launched → next rep or finish
-				if (p2a1BoltsSpawned >= P2A1_NUM_BOLTS && p2a1PendingBolts.isEmpty()) {
-					p2a1Reps++;
-					if (p2a1Reps < P2A1_MAX_REPS) {
-						p2a1SubState = P2Atk1SubState.SLIDE_OFF;
-					} else {
-						state = State.RETURNING;
-					}
-				}
-				break;
-				
-			default:
-				break;
-		}
-	}
-	
-	/** Spawns one stationary homing bolt at the boss's left edge, centred vertically. */
-	private void spawnP2HomingBolt() {
-		double boltX = x;
-		double boltY = y + (DISPLAY_HEIGHT / 2.0) - (P2A1_BOLT_HEIGHT / 2.0);
-		
-		EnemyProjectile bolt = new EnemyProjectile(
-			attackSprites[currentPhase][0],
-			boltX, boltY,
-			0, 0,  // stationary until launched
-			P2A1_BOLT_WIDTH, P2A1_BOLT_HEIGHT
-		);
-		enemyProjectiles.add(bolt);
-		p2a1PendingBolts.add(bolt);
-		p2a1PendingTimers.add(P2A1_LAUNCH_DELAY);
-	}
-	
-	/** Ticks each pending bolt's timer; aims and launches when timer reaches 0. */
-	private void tickP2HomingTimers() {
-		for (int i = p2a1PendingBolts.size() - 1; i >= 0; i--) {
-			int timer = p2a1PendingTimers.get(i) - 1;
-			
-			if (timer <= 0) {
-				launchP2HomingBolt(p2a1PendingBolts.get(i));
-				p2a1PendingBolts.remove(i);
-				p2a1PendingTimers.remove(i);
-			} else {
-				p2a1PendingTimers.set(i, timer);
-			}
-		}
-	}
-	
-	/** Aims a homing bolt at a player and sets its speed. */
-	private void launchP2HomingBolt(EnemyProjectile bolt) {
-		int targetX, targetY;
-		if (multiplayer && player2 != null && rng.nextBoolean()) {
-			targetX = player2.getX() + player2.getDisplayWidth() / 2;
-			targetY = player2.getY() + player2.getDisplayHeight() / 2;
-		} else {
-			targetX = player1.getX() + player1.getDisplayWidth() / 2;
-			targetY = player1.getY() + player1.getDisplayHeight() / 2;
-		}
-		
-		double boltCX = bolt.getX() + P2A1_BOLT_WIDTH / 2.0;
-		double boltCY = bolt.getY() + P2A1_BOLT_HEIGHT / 2.0;
-		double dx = targetX - boltCX;
-		double dy = targetY - boltCY;
-		double dist = Math.sqrt(dx * dx + dy * dy);
-		
-		if (dist > 0) {
-			bolt.setSpeedX(P2A1_BOLT_SPEED * dx / dist);
-			bolt.setSpeedY(P2A1_BOLT_SPEED * dy / dist);
-		} else {
-			bolt.setSpeedX(-P2A1_BOLT_SPEED);
-		}
-	}
-	
-	// ========== PHASE 2 ATTACK 2: FORKING BOLTS ==========
-	
-	private void initP2Attack2() {
-		p2a2Timer = P2A2_DURATION;
-		p2a2ShootCooldown = P2A2_SHOOT_INTERVAL;
-		p2a2BobUp = (y > (BOB_TOP + BOB_BOTTOM) / 2);
-		p2a2ForkableBolts.clear();
-	}
-	
-	private void updateP2Attack2() {
-		p2a2Timer--;
-		
-		// Bob up and down (same bounds as Phase 1 Attack 1)
-		if (p2a2BobUp) {
-			y -= BOB_SPEED;
-			if (y <= BOB_TOP) { y = BOB_TOP; p2a2BobUp = false; }
-		} else {
-			y += BOB_SPEED;
-			if (y >= BOB_BOTTOM) { y = BOB_BOTTOM; p2a2BobUp = true; }
-		}
-		
-		// Shoot cooldown
-		p2a2ShootCooldown--;
-		if (p2a2ShootCooldown <= 0) {
-			fireP2ForkingBolt();
-			p2a2ShootCooldown = P2A2_SHOOT_INTERVAL;
-		}
-		
-		// Check for forking at mid-screen
-		checkP2A2Forks();
-		
-		if (p2a2Timer <= 0) {
-			state = State.RETURNING;
-		}
-	}
-	
-	/** Fires a single bolt from the boss's left edge that will fork at mid-screen. */
-	private void fireP2ForkingBolt() {
-		double spawnX = x;
-		double spawnY = y + (DISPLAY_HEIGHT / 2.0) - (P2A2_BOLT_HEIGHT / 2.0);
-		
-		EnemyProjectile bolt = new EnemyProjectile(
-			attackSprites[currentPhase][1],
-			spawnX, spawnY,
-			P2A2_BOLT_SPEED, 0,
-			P2A2_BOLT_WIDTH, P2A2_BOLT_HEIGHT
-		);
-		enemyProjectiles.add(bolt);
-		p2a2ForkableBolts.add(bolt);
-	}
-	
-	/** When a forkable bolt reaches mid-screen, it splits into 3 (straight + ±20°). */
-	private void checkP2A2Forks() {
-		List<EnemyProjectile> newBolts = new ArrayList<>();
-		Iterator<EnemyProjectile> it = p2a2ForkableBolts.iterator();
-		
-		while (it.hasNext()) {
-			EnemyProjectile bolt = it.next();
-			if (bolt.isConsumed() || bolt.isOffScreen()) {
-				it.remove();
-				continue;
-			}
-			if (bolt.getX() + P2A2_BOLT_WIDTH / 2.0 <= P2A2_FORK_X) {
-				double forkX = bolt.getX();
-				double forkY = bolt.getY();
-				double speed = Math.abs(P2A2_BOLT_SPEED);
-				double rad = Math.toRadians(P2A2_FORK_ANGLE);
-				
-				// Up fork
-				EnemyProjectile upBolt = new EnemyProjectile(
-					attackSprites[currentPhase][1],
-					forkX, forkY,
-					-speed * Math.cos(rad), -speed * Math.sin(rad),
-					P2A2_BOLT_WIDTH, P2A2_BOLT_HEIGHT
-				);
-				newBolts.add(upBolt);
-				
-				// Down fork
-				EnemyProjectile downBolt = new EnemyProjectile(
-					attackSprites[currentPhase][1],
-					forkX, forkY,
-					-speed * Math.cos(rad), speed * Math.sin(rad),
-					P2A2_BOLT_WIDTH, P2A2_BOLT_HEIGHT
-				);
-				newBolts.add(downBolt);
-				
-				it.remove();  // original continues straight, just stop tracking it
-			}
-		}
-		
-		enemyProjectiles.addAll(newBolts);
+		atk2CurrentArrows.clear();
 	}
 	
 	// ========== ATTACK DISPATCHER ==========
 	
 	private void updateCurrentAttack() {
-		if (currentPhase == 0) {
-			if (currentAttack == 0) updateAttack1();
-			else if (currentAttack == 1) updateAttack2();
-		} else {
-			if (currentAttack == 0) updateP2Attack1();
-			else if (currentAttack == 1) updateP2Attack2();
+		if (currentAttack == 0) {
+			updateAttack1();
+		} else if (currentAttack == 1) {
+			updateAttack2();
 		}
 	}
 	
@@ -800,14 +521,8 @@ public class FirstBoss {
 		
 		// Hide boss sprite while it's sliding off screen during Attack 2
 		boolean drawBoss = true;
-		// Hide boss during Phase 1 Attack 2 slide-off
-		if (state == State.ATTACKING && currentPhase == 0 && currentAttack == 1
+		if (state == State.ATTACKING && currentAttack == 1
 		    && atk2SubState == Attack2SubState.SLIDE_OFF && x > PANEL_WIDTH) {
-			drawBoss = false;
-		}
-		// Hide boss during Phase 2 Attack 1 slide-off
-		if (state == State.ATTACKING && currentPhase == 1 && currentAttack == 0
-		    && p2a1SubState == P2Atk1SubState.SLIDE_OFF && x > PANEL_WIDTH) {
 			drawBoss = false;
 		}
 		

@@ -223,7 +223,7 @@ public class FirstBoss {
 		this.player2 = player2;
 		loadAllFrames();
 		
-		hpPerPhase = multiplayer ? 2000 : 1000;  // TESTING: was BASE_HP_PER_PHASE * 2 / BASE_HP_PER_PHASE
+		hpPerPhase = multiplayer ? BASE_HP_PER_PHASE * 2 : BASE_HP_PER_PHASE;
 		totalMaxHp = hpPerPhase * TOTAL_PHASES;
 		phaseHp = hpPerPhase;
 		totalHp = totalMaxHp;

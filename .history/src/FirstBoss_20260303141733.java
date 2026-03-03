@@ -180,8 +180,8 @@ public class FirstBoss {
 	private int p2a1Reps = 0;
 	private static final int P2A1_MAX_REPS = 3;
 	private int p2a1BoltsSpawned = 0;
-	private static final int P2A1_NUM_BOLTS = 5;
-	private static final int P2A1_SPAWN_INTERVAL = 30;    // 0.3 seconds
+	private static final int P2A1_NUM_BOLTS = 8;
+	private static final int P2A1_SPAWN_INTERVAL = 20;    // 0.2 seconds
 	private static final int P2A1_LAUNCH_DELAY = 50;      // 0.5 seconds after spawn
 	private int p2a1SpawnCooldown = 0;
 	private boolean p2a1Top = false;
@@ -197,7 +197,7 @@ public class FirstBoss {
 	// Boss bobs up/down, shoots bolts left that fork into 3 at mid-screen
 	private int p2a2Timer = 0;
 	private static final int P2A2_DURATION = 1000;         // 10 seconds
-	private static final int P2A2_SHOOT_INTERVAL = 90;     // 0.9 seconds
+	private static final int P2A2_SHOOT_INTERVAL = 75;     // 0.75 seconds
 	private int p2a2ShootCooldown = 0;
 	private boolean p2a2BobUp = false;
 	private static final int P2A2_BOLT_WIDTH = 97;
@@ -223,7 +223,7 @@ public class FirstBoss {
 		this.player2 = player2;
 		loadAllFrames();
 		
-		hpPerPhase = multiplayer ? 2000 : 1000;  // TESTING: was BASE_HP_PER_PHASE * 2 / BASE_HP_PER_PHASE
+		hpPerPhase = multiplayer ? BASE_HP_PER_PHASE * 2 : BASE_HP_PER_PHASE;
 		totalMaxHp = hpPerPhase * TOTAL_PHASES;
 		phaseHp = hpPerPhase;
 		totalHp = totalMaxHp;

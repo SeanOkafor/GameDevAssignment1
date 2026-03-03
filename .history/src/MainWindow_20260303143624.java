@@ -492,6 +492,7 @@ public class MainWindow {
 		level2Button.setVisible(false);
 		level1Panel.setVisible(true);
 		level2Panel.setVisible(false);
+		level1Running = true;
 		level2Running = false;
 		frame.setTitle("Trail Blazers - Level 1");
 		stopMenuMusic();  // stop menu music when entering a level
@@ -515,8 +516,6 @@ public class MainWindow {
 		p2Down = false;
 		p1ShootHeld = false;
 		p2ShootHeld = false;
-		// Enable the game loop for this level LAST, after all state is reset
-		level1Running = true;
 	}
 	
 	// Show Level 2 (parallax scrolling industrial background)
@@ -534,6 +533,7 @@ public class MainWindow {
 		level1Panel.setVisible(false);
 		level2Panel.setVisible(true);
 		level1Running = false;
+		level2Running = true;
 		frame.setTitle("Trail Blazers - Level 2");
 		stopMenuMusic();  // stop menu music when entering a level
 		startLevel2Music();  // start level 2 music
@@ -556,8 +556,6 @@ public class MainWindow {
 		p2Down = false;
 		p1ShootHeld = false;
 		p2ShootHeld = false;
-		// Enable the game loop for this level LAST, after all state is reset
-		level2Running = true;
 	}
 	
 	// Getter for multiplayer state

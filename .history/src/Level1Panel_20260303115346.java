@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
@@ -80,18 +79,6 @@ public class Level1Panel extends JPanel {
 	private ScoreScreen scoreScreen = new ScoreScreen();
 	private boolean scoreScreenTriggered = false;
 	
-	// ========== LOSER SCREEN ==========
-	private LoserScreen loserScreen = new LoserScreen();
-	private boolean loserScreenTriggered = false;
-	
-	// ========== HEALTH PACKS ==========
-	private java.awt.image.BufferedImage healthPackImage = HealthPack.loadSharedImage();
-	private List<HealthPack> healthPacks = new ArrayList<>();
-	private int healthPackSpawnTimer = 0;
-	private static final int HP_SPAWN_INTERVAL_SP = 1500;  // 15 seconds at 100 FPS
-	private static final int HP_SPAWN_INTERVAL_MP = 750;   // 7.5 seconds at 100 FPS
-	private Random healthPackRng = new Random();
-	
 	// ========== LEVEL TIMER & SCORING ==========
 	// Tracks when the level started (System.currentTimeMillis at level entry)
 	private long levelStartTime = 0;
@@ -160,10 +147,6 @@ public class Level1Panel extends JPanel {
 		firstBossSpawned = false;
 		scoreScreenTriggered = false;
 		scoreScreen.deactivate();
-		loserScreenTriggered = false;
-		loserScreen.deactivate();
-		healthPacks.clear();
-		healthPackSpawnTimer = 0;
 	}
 	
 	/**
@@ -188,11 +171,6 @@ public class Level1Panel extends JPanel {
 	/** Returns the score screen (for MainWindow to check if active). */
 	public ScoreScreen getScoreScreen() {
 		return scoreScreen;
-	}
-	
-	/** Returns the loser screen (for MainWindow to check if active). */
-	public LoserScreen getLoserScreen() {
-		return loserScreen;
 	}
 	
 	/** Returns elapsed seconds since level started. */
@@ -341,7 +319,7 @@ public class Level1Panel extends JPanel {
 		// When tutorial enemy is defeated, spawn the first boss
 		if (tutorialEnemy != null && tutorialEnemy.isDefeated() && !firstBossSpawned) {
 			firstBossSpawned = true;
-			firstBoss = new FirstBoss(player2 != null, player1, player2);
+			firstBoss = new FirstBoss(player2 != null);
 		}
 		
 		// Check if the first boss was defeated — trigger score screen
@@ -353,72 +331,9 @@ public class Level1Panel extends JPanel {
 			scoreScreen.activate(p1Dmg, p2Dmg, elapsedSeconds, mp);
 		}
 		
-		// ========== HEALTH PACK SPAWNING & COLLISION ==========
-		healthPackSpawnTimer++;
-		int spawnInterval = (player2 != null) ? HP_SPAWN_INTERVAL_MP : HP_SPAWN_INTERVAL_SP;
-		if (healthPackSpawnTimer >= spawnInterval) {
-			healthPackSpawnTimer = 0;
-			// Random Y between 50 and 900 (keeping pack fully on screen with wave offset)
-			double randomY = 50 + healthPackRng.nextInt(850);
-			healthPacks.add(new HealthPack(healthPackImage, randomY));
-		}
-		
-		// Update health packs and check collisions
-		Iterator<HealthPack> hpIt = healthPacks.iterator();
-		while (hpIt.hasNext()) {
-			HealthPack hp = hpIt.next();
-			hp.update();
-			
-			// Check Player 1 collision
-			if (player1 != null && player1.isAlive() && !hp.isConsumed()) {
-				if (hp.collidesWithPlayer(player1.getX(), player1.getY(),
-				    player1.getDisplayWidth(), player1.getDisplayHeight())) {
-					if (player1.heal()) {
-						hp.consume();
-					}
-				}
-			}
-			
-			// Check Player 2 collision
-			if (player2 != null && player2.isAlive() && !hp.isConsumed()) {
-				if (hp.collidesWithPlayer(player2.getX(), player2.getY(),
-				    player2.getDisplayWidth(), player2.getDisplayHeight())) {
-					if (player2.heal()) {
-						hp.consume();
-					}
-				}
-			}
-			
-			// Remove consumed or off-screen packs
-			if (hp.isConsumed() || hp.isOffScreen()) {
-				hpIt.remove();
-			}
-		}
-		
 		// Update score screen reveal timer
 		if (scoreScreen.isActive()) {
 			scoreScreen.update();
-		}
-		
-		// Check if all players have died and fallen off screen — trigger loser screen
-		if (!loserScreenTriggered && !scoreScreenTriggered) {
-			boolean allDead = false;
-			if (player2 != null) {
-				// Multiplayer: both must have fallen off screen
-				allDead = player1.hasFallenOffScreen() && player2.hasFallenOffScreen();
-			} else {
-				// Single player: just P1
-				allDead = player1.hasFallenOffScreen();
-			}
-			if (allDead) {
-				loserScreenTriggered = true;
-				loserScreen.activate();
-			}
-		}
-		
-		// Update loser screen timer
-		if (loserScreen.isActive()) {
-			loserScreen.update();
 		}
 	}
 	
@@ -451,11 +366,6 @@ public class Level1Panel extends JPanel {
 			p.draw(g2d);
 		}
 		
-		// Draw health packs
-		for (HealthPack hp : healthPacks) {
-			hp.draw(g2d);
-		}
-		
 		// Draw the tutorial enemy (on top of parallax, alongside players)
 		if (tutorialEnemy != null && !tutorialEnemy.isDefeated()) {
 			tutorialEnemy.draw(g2d);
@@ -472,11 +382,6 @@ public class Level1Panel extends JPanel {
 		// ========== DRAW SCORE SCREEN (on top of everything) ==========
 		if (scoreScreen.isActive()) {
 			scoreScreen.draw(g2d);
-		}
-		
-		// ========== DRAW LOSER SCREEN (on top of everything) ==========
-		if (loserScreen.isActive()) {
-			loserScreen.draw(g2d);
 		}
 	}
 	

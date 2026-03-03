@@ -251,13 +251,6 @@ public class Player1 {
 		if (hp < 0) hp = 0;
 	}
 	
-	/** Heals 1 HP if below max. Returns true if healed, false if already full. */
-	public boolean heal() {
-		if (hp >= MAX_HP) return false;
-		hp++;
-		return true;
-	}
-	
 	/**
 	 * Called when hit by an enemy projectile. Deals 1 heart of damage and
 	 * activates invincibility frames. Does nothing if already invincible.

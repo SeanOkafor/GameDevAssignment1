@@ -102,12 +102,6 @@ public class Player1 {
 	private static final int IFRAME_DURATION = 100;  // 1 second at 100 FPS
 	private static final int FLICKER_INTERVAL = 5;   // toggle visibility every 5 frames
 	
-	// ========== DEATH FALL ==========
-	// When HP hits 0, the player sprite falls straight down off screen.
-	private boolean falling = false;
-	private boolean fallenOffScreen = false;
-	private static final int FALL_SPEED = 5;  // pixels per frame
-	
 	public Player1() {
 		loadFrames();
 		// Spawn in the left quadrant (x = 100), vertically centred
@@ -148,21 +142,6 @@ public class Player1 {
 	 * Advances the animation frame and applies vertical movement.
 	 */
 	public void update() {
-		// --- Death fall: override normal movement ---
-		if (falling) {
-			y += FALL_SPEED;
-			if (y > panelHeight + 50) {
-				fallenOffScreen = true;
-			}
-			return;  // skip normal movement and animation
-		}
-		
-		// --- Start falling when HP reaches 0 ---
-		if (hp <= 0 && !falling) {
-			falling = true;
-			return;
-		}
-		
 		// --- Animation cycling ---
 		animationTick++;
 		if (animationTick >= ANIMATION_DELAY) {
@@ -235,8 +214,6 @@ public class Player1 {
 		damageDealt = 0;
 		specialCharge = 0;
 		iFrameTimer = 0;
-		falling = false;
-		fallenOffScreen = false;
 	}
 	
 	// ========== COMBAT STAT ACCESSORS ==========
@@ -249,13 +226,6 @@ public class Player1 {
 	public void takeDamage(int amount) {
 		hp -= amount;
 		if (hp < 0) hp = 0;
-	}
-	
-	/** Heals 1 HP if below max. Returns true if healed, false if already full. */
-	public boolean heal() {
-		if (hp >= MAX_HP) return false;
-		hp++;
-		return true;
 	}
 	
 	/**
@@ -289,12 +259,6 @@ public class Player1 {
 	public int getY() { return y; }
 	public int getDisplayWidth() { return DISPLAY_WIDTH; }
 	public int getDisplayHeight() { return DISPLAY_HEIGHT; }
-	
-	/** Returns true once the player has died and fallen below the screen. */
-	public boolean hasFallenOffScreen() { return fallenOffScreen; }
-	
-	/** Returns true if the player is currently in the death-fall animation. */
-	public boolean isFalling() { return falling; }
 	
 	// ========== ATTACK METHODS ==========
 	

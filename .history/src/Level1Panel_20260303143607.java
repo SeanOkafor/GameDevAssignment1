@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
@@ -84,14 +83,6 @@ public class Level1Panel extends JPanel {
 	private LoserScreen loserScreen = new LoserScreen();
 	private boolean loserScreenTriggered = false;
 	
-	// ========== HEALTH PACKS ==========
-	private java.awt.image.BufferedImage healthPackImage = HealthPack.loadSharedImage();
-	private List<HealthPack> healthPacks = new ArrayList<>();
-	private int healthPackSpawnTimer = 0;
-	private static final int HP_SPAWN_INTERVAL_SP = 1500;  // 15 seconds at 100 FPS
-	private static final int HP_SPAWN_INTERVAL_MP = 750;   // 7.5 seconds at 100 FPS
-	private Random healthPackRng = new Random();
-	
 	// ========== LEVEL TIMER & SCORING ==========
 	// Tracks when the level started (System.currentTimeMillis at level entry)
 	private long levelStartTime = 0;
@@ -162,8 +153,6 @@ public class Level1Panel extends JPanel {
 		scoreScreen.deactivate();
 		loserScreenTriggered = false;
 		loserScreen.deactivate();
-		healthPacks.clear();
-		healthPackSpawnTimer = 0;
 	}
 	
 	/**
@@ -353,48 +342,6 @@ public class Level1Panel extends JPanel {
 			scoreScreen.activate(p1Dmg, p2Dmg, elapsedSeconds, mp);
 		}
 		
-		// ========== HEALTH PACK SPAWNING & COLLISION ==========
-		healthPackSpawnTimer++;
-		int spawnInterval = (player2 != null) ? HP_SPAWN_INTERVAL_MP : HP_SPAWN_INTERVAL_SP;
-		if (healthPackSpawnTimer >= spawnInterval) {
-			healthPackSpawnTimer = 0;
-			// Random Y between 50 and 900 (keeping pack fully on screen with wave offset)
-			double randomY = 50 + healthPackRng.nextInt(850);
-			healthPacks.add(new HealthPack(healthPackImage, randomY));
-		}
-		
-		// Update health packs and check collisions
-		Iterator<HealthPack> hpIt = healthPacks.iterator();
-		while (hpIt.hasNext()) {
-			HealthPack hp = hpIt.next();
-			hp.update();
-			
-			// Check Player 1 collision
-			if (player1 != null && player1.isAlive() && !hp.isConsumed()) {
-				if (hp.collidesWithPlayer(player1.getX(), player1.getY(),
-				    player1.getDisplayWidth(), player1.getDisplayHeight())) {
-					if (player1.heal()) {
-						hp.consume();
-					}
-				}
-			}
-			
-			// Check Player 2 collision
-			if (player2 != null && player2.isAlive() && !hp.isConsumed()) {
-				if (hp.collidesWithPlayer(player2.getX(), player2.getY(),
-				    player2.getDisplayWidth(), player2.getDisplayHeight())) {
-					if (player2.heal()) {
-						hp.consume();
-					}
-				}
-			}
-			
-			// Remove consumed or off-screen packs
-			if (hp.isConsumed() || hp.isOffScreen()) {
-				hpIt.remove();
-			}
-		}
-		
 		// Update score screen reveal timer
 		if (scoreScreen.isActive()) {
 			scoreScreen.update();
@@ -449,11 +396,6 @@ public class Level1Panel extends JPanel {
 		// Draw all active projectiles on top of players
 		for (Projectile p : projectiles) {
 			p.draw(g2d);
-		}
-		
-		// Draw health packs
-		for (HealthPack hp : healthPacks) {
-			hp.draw(g2d);
 		}
 		
 		// Draw the tutorial enemy (on top of parallax, alongside players)
